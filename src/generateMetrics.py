@@ -10,8 +10,6 @@ labels=[0,1,2,3,4]
 
 
 #This function is needed when using softmax loss function (i.e. multiclass)
-#Not used in this study because binary classification was performed
-
 def classPrediction(arr):
 
     class_predictions = []
@@ -20,8 +18,6 @@ def classPrediction(arr):
 
     return class_predictions
 
-
-#TODO: Adapt to multiclass
 def summaryReport(y_actual, y_pred, stage):
 
     y_class = classPrediction(y_pred)
@@ -30,7 +26,6 @@ def summaryReport(y_actual, y_pred, stage):
     print(classification_report(y_actual, y_class, target_names=targets))
 
 #Print metrics for model performance
-#Currently setup only for Binary classfication
 def print_report(y_actual, y_pred, modelName, stage):
 
     y_class = classPrediction(y_pred)

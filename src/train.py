@@ -56,7 +56,7 @@ def createCallBack(appendCSV, learning_rate, modelName):
     
     callbacks = [EarlyStopping(
                               monitor ='val_loss',
-                              patience=9,  # Patience should be larger than the one in ReduceLROnPlateau
+                              patience=7,  # Patience should be larger than the one in ReduceLROnPlateau
                               min_delta=0.0001),
                 ReduceLROnPlateau(
                 monitor ='val_loss',
