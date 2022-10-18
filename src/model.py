@@ -61,6 +61,22 @@ def CNN_model(X_train, config):
 
   return  compileModel(model,config['learning_rate'])
 
+def CNN_Ach(X_train, config):
+  model= Sequential(name='CNN_Ach')
+  model.add(Conv1D(filters = 64, kernel_size = 3, strides = 1, activation = 'relu', input_shape = (X_train.shape[1],X_train.shape[2])))
+  model.add(BatchNormalization())
+  model.add(Dropout(rate=config['dropout']))
+  model.add(Conv1D(filters = 128, kernel_size = 2, strides = 1, activation = 'relu'))
+  model.add(BatchNormalization())
+  model.add(Dropout(rate=config['dropout']))
+  model.add(Conv1D(filters = 256, kernel_size = 2, strides = 1, activation = 'relu'))
+  model.add(BatchNormalization())
+  model.add(Dropout(rate=config['dropout']))
+  model.add(GlobalAveragePooling1D())
+  model.add(Dense(100, activation='relu'))
+  model.add(Dense(num_classes,activation=output_activation_fn))
+
+
 def LSTM_model(X_train, config):
 
   model = Sequential(name = 'LSTM')
@@ -118,6 +134,9 @@ def generateModel(X_train, config):
     model = LSTM_model(X_train, config)
 
   if(config['model_choice']=="CNN"):
+
+    model = CNN_model(X_train, config)
+  if(config['model_choice']=="CNN_Ach"):
 
     model = CNN_model(X_train, config)
 
