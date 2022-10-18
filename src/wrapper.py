@@ -194,6 +194,8 @@ def main():
 
 
 def optimize():
+
+    wandb.init(project="ecg", entity="ai_ecg")
     
     sweep_config = {
     'method': 'random',
@@ -205,7 +207,7 @@ def optimize():
         'learning_rate': {'values': [0.01,0.001,0.0001]},
         'dropout':{'values':[0.2,0.3,0.4,0.6]}
      }
-}
+    }
     sweep_id = wandb.sweep(sweep=sweep_config, project='AI_ass')
     wandb.agent(sweep_id, function=main, count =10)
 

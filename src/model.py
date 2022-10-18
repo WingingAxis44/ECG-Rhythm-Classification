@@ -59,6 +59,8 @@ def CNN_model(X_train, config):
   model.add(Dense(100, activation='relu'))
   model.add(Dense(num_classes,activation=output_activation_fn))
 
+  return  compileModel(model,config['learning_rate'])
+
 def LSTM_model(X_train, config):
 
   model = Sequential(name = 'LSTM')
