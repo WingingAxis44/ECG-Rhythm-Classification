@@ -1,7 +1,7 @@
 
 from tensorflow.keras.layers import (MaxPooling1D,
     Input, add, Dropout, BatchNormalization,LayerNormalization, GlobalAveragePooling1D,
-    TimeDistributed, Activation, Add, SimpleRNN , Bidirectional, LSTM, Flatten, Dense, Conv1D,pooling)
+    TimeDistributed, Activation, Add, SimpleRNN , Bidirectional, LSTM, Flatten, Dense, Conv1D)
 
 from tensorflow.keras.optimizers import Adam
 
