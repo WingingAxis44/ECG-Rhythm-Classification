@@ -70,7 +70,8 @@ def main():
     disable_GPU = args.disable_GPU
   
     preprocessing_choices = args.preprocessing
-   
+
+    isOptimise = args.optimise
    
     preprocessing_config = dict(oversample=False,undersample=False, normalize=False)
 
@@ -82,19 +83,7 @@ def main():
 
     #When the model is a super simple model, CPU is better than GPU for training
     if (disable_GPU):
-        environ["CUDA_VISIBLE_DEVICES"] = "-1"  #Disables GPU 
-
-    #If user requests resuming training, then training is implied
-    if(resume_training):    
-        skip_train = False
-    
-
-    #If user requests resuming training or to skip training, then loading saved datasets is implied
-    if(resume_training or skip_train):   
-        load_saved_train_val=True
-
-    
-    model = None
+        environ["CUDA_VISIBLE_DEVICES"] = "-1"  #Disables GPU   
 
     modelName = path_to_model
     while('/' in modelName):                #Remove any preceding directory levels
@@ -105,113 +94,170 @@ def main():
         modelName = modelName[index+1:]     #Remove the backup_ prefix
 
 
-    #If loading saved data splits is requested or deduced by other arguments passed in.
-    if(load_saved_train_val):
+    if isOptimise:
+        hyperparameter_search(modelName, preprocessing_config, epochs, model_choice)
+    else:
+
+            #If user requests resuming training, then training is implied
+        if(resume_training):    
+            skip_train = False
+    
+
+        #If user requests resuming training or to skip training, then loading saved datasets is implied
+        if(resume_training or skip_train):   
+            load_saved_train_val=True
+
+        #If loading saved data splits is requested or deduced by other arguments passed in.
+        if(load_saved_train_val):
+            try:
+            
+                X_train,rhythm_train, X_valid,rhythm_valid, X_test, rhythm_test = utils.load_datasets(preprocessing_config)
+                                
+            except:
+                
+                print('Training and Validation datasets successfully loaded from:' + 
+                './trained_models/saved_data_splits.npz')
+        else:
+            X_train,rhythm_train, X_valid,rhythm_valid, X_test, rhythm_test = utils.build_datasets(num_sec=1, data_path='data/mitdb/', preprocessing_config=preprocessing_config)
+    
+        
+
+        if(not skip_train): #i.e. train the model
+            
+            model_config = dict(model_choice=model_choice,
+            batch_size=batch_size,learning_rate=learning_rate,
+                                dropout=dropout)
+                
+            model = None
+
+            #If user has requested to continue training a model (or from its backup)
+            if (resume_training):
+
+                                    
+                backupPath = 'trained_models/backup_'+modelName
+
+                #If there is a backup available, present user with the option to continue training from that backup
+                if(os.path.exists(backupPath)):
+                    print('A recent backup of this model was found at <' + backupPath+'>')
+
+                    modTimesinceEpoc = os.path.getmtime(backupPath)
+
+                    # Convert seconds since epoch to readable timestamp
+
+                    lastModified = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(modTimesinceEpoc))
+                    print("It was last modified at:", lastModified )
+
+                    print('Would you like to continue from this backup?')
+                
+                    inp = input('Please enter (Y)es to resume from this backup or (N)o to skip and use original model path given\n')
+                
+
+                    if(utils.str2bool(inp)):
+                        print('Resuming training with model from backup: '+ backupPath )
+                        
+                        path_to_model = backupPath
+                    else:
+                        print('You requested not to use the backup. Retraining model at ' + path_to_model)
+                                
+                try:
+
+                    model = load_model(path_to_model)
+                except IOError:
+            
+                    sys.exit('Resuming training failed. Please check model path is correct')
+            
+                print('Model successfully loaded from: ' + path_to_model)
+                print('Optimizer states:\n', str(model.optimizer.get_config()))
+        
+                
+            #If user not resuming training (i.e. building a fresh model)
+            else:
+
+                #Check if model exists. If it does, confirm with user that they wish to overwrite it or not    
+                if(os.path.exists(path_to_model)):
+                    path_to_model = utils.overwriteCheck(path_to_model)
+
+
+                #Build and compile model
+                model = generateModel(X_train, model_config)
+        
+            
+            path_to_model = trainModel(model=model, X_train=X_train,X_valid=X_valid, y_train = rhythm_train,
+                    y_valid = rhythm_valid, path_to_model=path_to_model, batch_size=batch_size, learning_rate= learning_rate,
+                    epochs=epochs, verbose=verbosity)
+        
+
+        y_train_preds_dense, y_valid_preds_dense, y_test_preds_dense = prediction(path_to_model=path_to_model,
+                                                            X_train=X_train, X_valid=X_valid, X_test= X_test, verbose=verbosity)
+
+        utils.outputMetrics(y_train_preds_dense, y_valid_preds_dense, y_test_preds_dense,
+        rhythm_train, rhythm_valid, rhythm_test, modelName)
+
+
+
+
+def hyperparameter_search():
+
+    with wandb.init(project="ecg", entity="ai_ecg"):
+    
+ 
+        batch_size = wandb.config.batch_size
+        learning_rate = wandb.config.learning_rate
+        dropout = wandb.config.dropout
+        modelName = wandb.config.modelName
+        model_choice = wandb.config.model_choice
+        preprocessing_config = wandb.config.preprocessing_config
+        epochs = wandb.config.epochs
+
+        model_config = dict(model_choice=model_choice,
+            batch_size=batch_size,learning_rate=learning_rate,
+                                dropout=dropout)
+    
         try:
         
             X_train,rhythm_train, X_valid,rhythm_valid, X_test, rhythm_test = utils.load_datasets(preprocessing_config)
                             
         except:
+            X_train,rhythm_train, X_valid,rhythm_valid, X_test, rhythm_test = utils.build_datasets(num_sec=1, data_path='data/mitdb/', preprocessing_config=preprocessing_config)        
             
-            print('Training and Validation datasets successfully loaded from:' + 
-            './trained_models/saved_data_splits.npz')
-    else:
-        X_train,rhythm_train, X_valid,rhythm_valid, X_test, rhythm_test = utils.build_datasets(num_sec=1, data_path='data/mitdb/', preprocessing_config=preprocessing_config)
-  
-    
 
-    if(not skip_train): #i.e. train the model
+        model = generateModel(X_train, model_config)
         
-        model_config = dict(model_choice=model_choice,
-        batch_size=batch_size,learning_rate=learning_rate,
-                            dropout=dropout)
             
-        model = None
-
-        #If user has requested to continue training a model (or from its backup)
-        if (resume_training):
-
-                                
-            backupPath = 'trained_models/backup_'+modelName
-
-            #If there is a backup available, present user with the option to continue training from that backup
-            if(os.path.exists(backupPath)):
-                print('A recent backup of this model was found at <' + backupPath+'>')
-
-                modTimesinceEpoc = os.path.getmtime(backupPath)
-
-                # Convert seconds since epoch to readable timestamp
-
-                lastModified = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(modTimesinceEpoc))
-                print("It was last modified at:", lastModified )
-
-                print('Would you like to continue from this backup?')
-            
-                inp = input('Please enter (Y)es to resume from this backup or (N)o to skip and use original model path given\n')
-            
-
-                if(utils.str2bool(inp)):
-                    print('Resuming training with model from backup: '+ backupPath )
-                    
-                    path_to_model = backupPath
-                else:
-                    print('You requested not to use the backup. Retraining model at ' + path_to_model)
-                               
-            try:
-
-                model = load_model(path_to_model)
-            except IOError:
+        trainModel(model=model, X_train=X_train,X_valid=X_valid, y_train = rhythm_train,
+                    y_valid = rhythm_valid, path_to_model=modelName, batch_size=batch_size, learning_rate= learning_rate,
+                    epochs=epochs, verbose=1)
         
-                sys.exit('Resuming training failed. Please check model path is correct')
-        
-            print('Model successfully loaded from: ' + path_to_model)
-            print('Optimizer states:\n', str(model.optimizer.get_config()))
+
+        y_train_preds_dense, y_valid_preds_dense, y_test_preds_dense = prediction(path_to_model=model,
+                                                            X_train=X_train, X_valid=X_valid, X_test= X_test, verbose=verbosity)
+
+        utils.outputMetrics(y_train_preds_dense, y_valid_preds_dense, y_test_preds_dense,
+        rhythm_train, rhythm_valid, rhythm_test, modelName)
+
+
     
-            
-        #If user not resuming training (i.e. building a fresh model)
-        else:
+def optimize(modelName, preprocessing_config, epochs, model_choice):
 
-            #Check if model exists. If it does, confirm with user that they wish to overwrite it or not    
-            if(os.path.exists(path_to_model)):
-                path_to_model = utils.overwriteCheck(path_to_model)
-
-
-            #Build and compile model
-            model = generateModel(X_train, model_config)
-    
-        
-        path_to_model = trainModel(model=model, X_train=X_train,X_valid=X_valid, y_train = rhythm_train,
-                y_valid = rhythm_valid, path_to_model=path_to_model, batch_size=batch_size, learning_rate= learning_rate,
-                epochs=epochs, verbose=verbosity)
-    
-
-    y_train_preds_dense, y_valid_preds_dense, y_test_preds_dense = prediction(path_to_model=path_to_model,
-                                                        X_train=X_train, X_valid=X_valid, X_test= X_test, verbose=verbosity)
-
-    utils.outputMetrics(y_train_preds_dense, y_valid_preds_dense, y_test_preds_dense,
-    rhythm_train, rhythm_valid, rhythm_test, modelName)
-
-
-
-def optimize():
-
-    wandb.init(project="ecg", entity="ai_ecg")
-    
     sweep_config = {
-    'method': 'random',
-    'name': 'sweep',
-    'metric': {'goal': 'minimize', 'name': 'val_loss'},
-    'parameters': 
-    {
-        'batch_size': {'values': [32, 64, 128]},
-        'learning_rate': {'values': [0.01,0.001,0.0001]},
-        'dropout':{'values':[0.2,0.3,0.4,0.6]}
-     }
-    }
+        'method': 'random',
+        'name': 'sweep',
+        'metric': {'goal': 'minimize', 'name': 'val_loss'},
+        'parameters': 
+        {
+            'batch_size': {'values': [32, 64, 128]},
+            'learning_rate': {'values': [0.01,0.001,0.0001]},
+            'dropout':{'values':[0.2,0.3,0.4,0.6]},
+            'modelName' :{'value':modelName},
+            'epochs' :{'value':epochs},
+            'model_choice' :{'value':model_choice},
+            'preprocessing_config' :{'value':preprocessing_config}
+        }
+        }
+
+    
     sweep_id = wandb.sweep(sweep=sweep_config, project='AI_ass')
-    wandb.agent(sweep_id, function=main, count =10)
-
-
+    wandb.agent(sweep_id, function=hyperparameter_search, count =10)
 
 
 #This function processes all the possible arguments that can be passed through the command line
