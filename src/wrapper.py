@@ -95,7 +95,7 @@ def main():
 
 
     if isOptimise:
-        hyperparameter_search(modelName, preprocessing_config, epochs, model_choice)
+        optimise(modelName, preprocessing_config, epochs, model_choice)
     else:
 
             #If user requests resuming training, then training is implied
