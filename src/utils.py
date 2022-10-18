@@ -98,9 +98,9 @@ def build_datasets(num_sec,  data_path, preprocessing_config):
                 rhythm_valid=rhythm_valid, X_test=X_test, rhythm_test=rhythm_test)
     print('Data splits compressed and saved to: trained_models/saved_data_splits.npz')
 
-    #X_train,rhythm_train, X_valid,rhythm_valid, X_test, rhythm_test = load_datasets(preprocessing_config)
-    # X_train,rhythm_train, X_valid,rhythm_valid, X_test, rhythm_test = transformData(X_train,rhythm_train, X_valid,rhythm_valid, 
-    # X_test, rhythm_test, preprocessing_config)
+   
+    X_train,rhythm_train, X_valid,rhythm_valid, X_test, rhythm_test = transformData(X_train,rhythm_train, X_valid,rhythm_valid, 
+    X_test, rhythm_test, preprocessing_config)
     
     return  X_train,rhythm_train, X_valid,rhythm_valid, X_test, rhythm_test
 
@@ -176,6 +176,7 @@ def transformData(X_train,rhythm_train, X_valid,rhythm_valid, X_test, rhythm_tes
 
         #dataStatistics(X_train,rhythm_train, X_valid,rhythm_valid, X_test, rhythm_test)
         print('Data Transformation complete!\n')
+        print(np.unique(rhythm_train, return_counts=True))
     else:
         print('\nNo preprocessing performed. Data distribution unchanged\n')
 

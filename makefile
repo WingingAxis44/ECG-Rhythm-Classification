@@ -14,7 +14,7 @@ runMain:
 	venv/bin/python3 src/wrapper.py "./trained_models/simple_model" -m "simple"
 
 runMainLoad:
-	venv/bin/python3 src/wrapper.py "./trained_models/simple_model" -m "simple" -ls -e 15
+	venv/bin/python3 src/wrapper.py "./trained_models/simple_model" -m "simple" -ls -e 10 -p oversample
 
 runMainSkip:
 	venv/bin/python3 src/wrapper.py "./trained_models/simple_model" -m "simple" -s

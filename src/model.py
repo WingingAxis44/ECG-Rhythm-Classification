@@ -43,7 +43,9 @@ def simple1D_CNN(X_train, config):
 
   return  compileModel(model,config['learning_rate'])
 
-
+def CNN_model(X_train, config):
+  model= Sequential(name='CNN')
+  model.add(Conv1D())
 def LSTM_model(X_train, config):
 
   model = Sequential(name = 'LSTM')
