@@ -24,8 +24,8 @@ import time
 warnings.filterwarnings("ignore")
 
 import utils
+import wandb
 
-import datawrapper
 from model import (generateModel)
 from os import environ
 import os.path
@@ -40,9 +40,7 @@ import argparse
 
 preprocessing_options = ["none", "oversample", "normalize", "undersample"]
 
-model_options = ["simple", "BiLSTM", "BiLSTM2", "BiLSTM_pool",
-"LSTM", "LSTM_deep", "RNN", "1D_CNN", "1D_HYBRID", "LSTM_deep2",
- "LSTM_deep3", "LSTM_deep3_HighDrop", "LSTM_deep3_MedDrop", "LSTM_deep3_LowDrop" , "LSTM_deep3_LayerNorm"]
+model_options = ["simple",  "1D_CNN", "LSTM"]
 
 
 #This wrapper class is the user's gateway to the experimental platform.
@@ -52,20 +50,21 @@ model_options = ["simple", "BiLSTM", "BiLSTM2", "BiLSTM_pool",
 
 def main():
 
+    #TODO: Change for wandb
+    dropout = 0.2
+    learning_rate = 0.001
+    batch_size = 64
+
     args = parseArguments()
 
-    num_sec = args.num_sec
     skip_train = args.skip_training
-    batch_size = args.batch_size
-    verbosity = args.verbosity
-    learning_rate = args.learning_rate
     epochs = args.epochs
-    test_size = args.test_size
+    verbosity = args.verbosity
+
     path_to_model = args.path_to_model
-    data_path = args.data_path
     model_choice = args.model_choice
-    initial_epoch = args.initial_epoch
-    beat_split = args.beat_split_experiment
+
+
     resume_training = args.resume
     load_saved_train_val = args.load_saved_train_val
     disable_GPU = args.disable_GPU
@@ -94,9 +93,6 @@ def main():
     if(resume_training or skip_train):   
         load_saved_train_val=True
 
-    #By default, patient split will be performed
-    #But, if the user requests beat_splitting, patient_split will consequently be set to False
-    patient_split = False if beat_split else True
     
     model = None
 
@@ -113,34 +109,22 @@ def main():
     if(load_saved_train_val):
         try:
         
-            X_train,rhythm_train, X_valid,rhythm_valid, X_test, rhythm_test, threshold = utils.load_datasets(preprocessing_config)
+            X_train,rhythm_train, X_valid,rhythm_valid, X_test, rhythm_test = utils.load_datasets(preprocessing_config)
                             
         except:
-        
-            sys.exit('Loading saved datasets failed.\nPlease ensure you have' +
-                ' training and test splits saved if you have requested to load in sample data, are skipping training or resuming training.\n' + 
-                'The program expects the splits to be saved as \"./trained_models/"saved_data_splits.npz\"\n' 
-                )
-        
-        print('Training and Validation datasets successfully loaded from:' + 
+            
+            print('Training and Validation datasets successfully loaded from:' + 
             './trained_models/saved_data_splits.npz')
-   
-    #If new data splits need/ have been requested to be created
     else:
-
-        #Ask user what type of disease they are looking to classify on (This currently assumes a binary classification)
-
-        disease_choice = datawrapper.choose_datasets()
-
-        X_train, rhythm_train, X_valid,rhythm_valid, X_test, rhythm_test, threshold = utils.build_datasets(test_size=test_size,
-            data_path=data_path, num_sec=num_sec, preprocessing_config=preprocessing_config, disease_choice=disease_choice, patient_split=patient_split)
-        
+        X_train,rhythm_train, X_valid,rhythm_valid, X_test, rhythm_test = utils.build_datasets(num_sec=1, data_path='data/mitdb/', preprocessing_config=preprocessing_config)
+  
     
 
     if(not skip_train): #i.e. train the model
         
-        model_config = dict(model_choice=model_choice, batch_size=batch_size,learning_rate=learning_rate,
-                            dropout=0.25 )
+        model_config = dict(model_choice=model_choice,
+        batch_size=batch_size,learning_rate=learning_rate,
+                            dropout=dropout)
             
         model = None
 
@@ -182,8 +166,7 @@ def main():
         
             print('Model successfully loaded from: ' + path_to_model)
             print('Optimizer states:\n', str(model.optimizer.get_config()))
-        
-            print('Initial epoch set to: ' + str(initial_epoch))
+    
             
         #If user not resuming training (i.e. building a fresh model)
         else:
@@ -199,21 +182,40 @@ def main():
         
         path_to_model = trainModel(model=model, X_train=X_train,X_valid=X_valid, y_train = rhythm_train,
                 y_valid = rhythm_valid, path_to_model=path_to_model, batch_size=batch_size, learning_rate= learning_rate,
-                epochs=epochs, verbose=verbosity, inital_epoch=initial_epoch)
+                epochs=epochs, verbose=verbosity)
     
 
-    y_train_preds_dense, y_test_preds_dense = prediction(path_to_model=path_to_model,
-                                                        X_train=X_train, X_test= X_test, verbose=verbosity)
+    y_train_preds_dense, y_valid_preds_dense, y_test_preds_dense = prediction(path_to_model=path_to_model,
+                                                        X_train=X_train, X_valid=X_valid, X_test= X_test, verbose=verbosity)
 
-    utils.outputMetrics(y_train_preds_dense, y_test_preds_dense, rhythm_train, rhythm_test, modelName,threshold)
+    utils.outputMetrics(y_train_preds_dense, y_valid_preds_dense, y_test_preds_dense,
+    rhythm_train, rhythm_valid, rhythm_test, modelName)
+
+
+
+def optimize():
+    
+    sweep_config = {
+    'method': 'random',
+    'name': 'sweep',
+    'metric': {'goal': 'minimize', 'name': 'val_loss'},
+    'parameters': 
+    {
+        'batch_size': {'values': [32, 64, 128]},
+        'learning_rate': {'values': [0.01,0.001,0.0001]},
+        'dropout':{'values':[0.2,0.3,0.4,0.6]}
+     }
+}
+    sweep_id = wandb.sweep(sweep=sweep_config, project='AI_ass')
+    wandb.agent(sweep_id, function=main, count =10)
+
+
 
 
 #This function processes all the possible arguments that can be passed through the command line
 def parseArguments():
 
     parser = argparse.ArgumentParser(description='MLECG experimental Platform')
-    parser.add_argument('data_path', type=str,
-                        help='Path to data containing ECG data')
 
     parser.add_argument('path_to_model', type=str,
                         help='Path to model which you would like to load.'
@@ -233,22 +235,12 @@ def parseArguments():
                         help='Training Epochs. Value must be > 1 and < 1024.'
                         ' Default: 5')
 
-    parser.add_argument('-i','--initial_epoch', type=int, default=0,
-                        help='Epoch to start training from. Value must be > 0'
-                        ' This should only be a different number if training was interupted'
-                        ' and needs to start from a checkpoint'
-                        ' Default: 0')
-
     parser.add_argument('-r', '--resume', action='store_true',
                         help='Flag that can be passed'
                         ' to resume training of a model. The program will look for a backup of a model based' 
                         ' on the path_to_model arg provided. There also needs to be saved '
                         ' training and testing data splits.'
                         )
-
-    parser.add_argument('-l', '--learning_rate', type=float, default=0.001,
-                        help='Number between 0 and 1 specifying the learning rate for the model'
-                        ' Default: 0.001')
 
     parser.add_argument('-s', '--skip_training', action='store_true',
                         help='Flag that can be passed'
@@ -262,10 +254,6 @@ def parseArguments():
                         help='Verbosity. Can choose either -v 1 for verbose'
                         ' output or -v 0 for quiet output'
                         ' Default: 1')
-
-    parser.add_argument('-b', '--batch_size', type=int, default=64,
-                        help='Batch size. Value must be > 1 and < 1024.'
-                        ' Default: 64')
  
     parser.add_argument('-m','--model_choice', type=str, default="simple", choices=model_options,
                         help='Specify particular type of model to build'
@@ -284,21 +272,6 @@ def parseArguments():
                         ' to load previously saved training and test data splits from disc.'
                         ' Note: If resuming training or skipping to predictions, data splits will always be loaded'
                         ' from disc to maintain integrity in the evaulation of the model.')
-
-    parser.add_argument('-ts','--test_size', type=float, default=0.1,
-                    help='Number between 0 and 1 determining how much of'
-                            'the data is to be used for the test set. The remaining '
-                            'is used for training and validation'
-                            ' Default: 0.1')
-                            
-    parser.add_argument('-x','--beat_split_experiment', action='store_true',
-                    help='Flag that can be passed to perform the beat splitting experiment'
-                        'This is for creating the intra-patient classifier version of the models'
-                        'i.e. Patient specific data will be allowed to leak between Training, validation and testing sets')
-
-    parser.add_argument('-n', '--num_sec', type=float, default=0.4,
-                        help='Number of seconds to include before and after the QRS complex.'
-                        ' Default: 0.4')
   
     args, err = parser.parse_known_args()
     if err:

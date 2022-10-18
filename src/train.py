@@ -6,10 +6,9 @@ warnings.filterwarnings("ignore")
 
 from tensorflow.keras.callbacks import (ModelCheckpoint, TensorBoard, ReduceLROnPlateau,
                                         CSVLogger, EarlyStopping)
-from datetime import datetime
 
-from numpy import exp
 
+from wandb.keras import WandbCallback  
 
 
 
@@ -58,7 +57,14 @@ def createCallBack(appendCSV, learning_rate, modelName):
     callbacks = [EarlyStopping(
                               monitor ='val_loss',
                               patience=9,  # Patience should be larger than the one in ReduceLROnPlateau
-                              min_delta=0.0001)]
+                              min_delta=0.0001),
+                ReduceLROnPlateau(
+                monitor ='val_loss',
+                factor=0.1,
+                patience=5,  
+                min_delta=0.0001,
+                min_lr=learning_rate/1000)]
+                #,WandbCallback()] 
 
     callbacks += [TensorBoard(log_dir='./logs/' + modelName + '/', histogram_freq=1),
                   CSVLogger('./logs/' + modelName + '/training.log', append=appendCSV)]  # Change append to true if continuing training

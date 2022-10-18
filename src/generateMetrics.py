@@ -4,41 +4,10 @@ import numpy as np
 import seaborn as sb
 from datetime import datetime
 
-labels = ['Normal', 'MI']
+targets = ['N', 'S','V','F','Q']
 
-def summaryReport(y_actual, y_pred, thresh, stage):
+labels=[0,1,2,3,4]
 
-    print(stage + " stage")
-    
-    print(classification_report(y_actual, (y_pred>thresh), target_names=labels))
-
-#Print metrics for model performance
-#Currently setup only for Binary classfication
-def print_report(y_actual, y_pred, thresh, modelName, stage):
-
-    print('Metrics for model: ' + modelName)
-    print(stage + " stage")
-    print('Threshold:', thresh)
-    
-    auc = roc_auc_score(y_actual, y_pred)
-
-    accuracy = accuracy_score(y_actual, (y_pred>thresh))
-
-    recall = recall_score(y_actual, (y_pred>thresh))
-    f1 = f1_score(y_actual, (y_pred>thresh))
-    precision = precision_score(y_actual, (y_pred>thresh))
-    
-    specificity = recall_score(y_actual, (y_pred > thresh), pos_label=0)
-    
-    print('AUC:', auc)
-    print('accuracy:' ,accuracy)
-    print('recall:' , recall)
-    print('specificity:' , specificity)
-    print('precision:' , precision)
-    print('F1:' , f1)
-    print('')
-
-    return  auc, accuracy, recall, specificity,  precision ,f1
 
 #This function is needed when using softmax loss function (i.e. multiclass)
 #Not used in this study because binary classification was performed
@@ -51,13 +20,52 @@ def classPrediction(arr):
 
     return class_predictions
 
+
+#TODO: Adapt to multiclass
+def summaryReport(y_actual, y_pred, stage):
+
+    y_class = classPrediction(y_pred)
+    print(stage + " stage")
+    
+    print(classification_report(y_actual, y_class, target_names=targets))
+
+#Print metrics for model performance
+#Currently setup only for Binary classfication
+def print_report(y_actual, y_pred, modelName, stage):
+
+    y_class = classPrediction(y_pred)
+    print('Metrics for model: ' + modelName)
+    print(stage + " stage")
+    
+    
+   # auc = roc_auc_score(y_actual, y_pred)
+
+    accuracy = accuracy_score(y_actual, y_class)
+
+    recall = recall_score(y_actual, y_class, average=None, labels=labels )
+    f1 = f1_score(y_actual, (y_class), average=None, labels=labels )
+    precision = precision_score(y_actual, y_class, average=None, labels=labels )
+    
+   # specificity = recall_score(y_actual, y_class, pos_label=0)
+    
+  #  print('AUC:', auc)
+    print('accuracy:' ,accuracy)
+    print('recall:' , recall)
+   # print('specificity:' , specificity)
+    print('precision:' , precision)
+    print('F1:' , f1)
+    print('')
+
+  #  return  auc, accuracy, recall, specificity,  precision ,f1
+
+
 #Plot and save confusion matrix for model predictions
-def confusionMatrix(y_actual, y_pred, modelName, stage, thresh):
+def confusionMatrix(y_actual, y_pred, modelName, stage):
 
     plt.figure('conf_matrix')
-
-    sb.heatmap(confusion_matrix(y_actual, (y_pred>thresh), normalize='true'),
-    annot = True, xticklabels = labels, yticklabels = labels, cmap = 'summer')
+    y_class = classPrediction(y_pred)
+    sb.heatmap(confusion_matrix(y_actual, y_class, normalize='true'),
+    annot = True, xticklabels = targets, yticklabels = targets, cmap = 'summer')
     plt.xlabel('Predicted Labels')
     plt.ylabel('True Labels')
     plt.title(stage + ' : ' + modelName)

@@ -1,12 +1,12 @@
-
+import data
 from scipy.stats import describe
 from argparse import ArgumentTypeError
+from sklearn.model_selection import train_test_split
 import os
 import numpy as np
 num_classes = 3
 
 import preprocessing
-import datawrapper
 
 from generateMetrics import (print_report, summaryReport,confusionMatrix)
 
@@ -43,7 +43,6 @@ def overwriteCheck(path_to_model):
     return path_to_model
 
 #Function for calculating and displaying statistics about the ECG data extracted
-#Also determines the threshold used for converting between model prediction probabilites
 #and the associated diagnostic class label
 
 def dataStatistics(X_train,rhythm_train, X_valid,rhythm_valid, X_test, rhythm_test, disease_choice):
@@ -81,55 +80,29 @@ def dataStatistics(X_train,rhythm_train, X_valid,rhythm_valid, X_test, rhythm_te
         print (tabulate(data, tablefmt="github", headers=["Stage","(Min, Max)", "Mean", "Variance", "Kurtosis", "Skewness"], floatfmt=".4f"))
         print('')
 
-    threshold = min(countDisease / countTotal, 0.5)
-
-    return threshold
-
-def build_datasets(test_size , num_sec,  data_path, preprocessing_config, disease_choice, patient_split=True):
+def build_datasets(num_sec,  data_path, preprocessing_config):
 
 #Split dataset according to a training:validation ratio.
     
-    #AFIB
-    if (disease_choice==1):
+    X_all, rhythm_all = data.make_dataset(data_path,num_sec)
 
- 
-        count = 1
-    
-        while True:
-            print('Sampling Data... Attempt ' + str(count))
-            pts_train, pts_valid, pts_test = datawrapper.split_by_patient(test_size=test_size)
+    X_remaining, X_test, rhythm_remaining, rhythm_test = train_test_split(X_all, rhythm_all, test_size=0.1, stratify=rhythm_all) 
   
-            #Build training dataset
-            X_train, rhythm_train = datawrapper.make_dataset(
-            samples=pts_train, num_sec=num_sec,  data_path=data_path)
+    ratio_remaining = 0.9
+    ratio_adjusted = 0.1 / ratio_remaining
+    X_train, X_valid, rhythm_train, rhythm_valid = train_test_split(X_remaining, rhythm_remaining, test_size=ratio_adjusted, stratify=rhythm_remaining) 
+  
 
-            #Build validation dataset
-            X_valid,  rhythm_valid = datawrapper.make_dataset(
-                samples=pts_valid, num_sec=num_sec,  data_path=data_path)
-
-            #Build test dataset
-            X_test, rhythm_test = datawrapper.make_dataset(
-                samples=pts_test, num_sec=num_sec,  data_path=data_path)
-            
-            count = count + 1
-            if correctSplitRatio(X_train, rhythm_train,X_valid,rhythm_valid, X_test, rhythm_test, test_size):
-                print('Data sampled effectively')
-               
-                break
-        
-    #MI
-    else:
-        X_train,rhythm_train, X_valid,rhythm_valid, X_test, rhythm_test = datawrapper.make_dataset(
-                samples=None, num_sec=num_sec,  data_path=data_path, patient_split=patient_split)
-    
-    np.savez_compressed('./trained_models/saved_data_splits', disease_choice=disease_choice,
+    np.savez_compressed('./trained_models/saved_data_splits',
                 X_train=X_train, rhythm_train=rhythm_train, X_valid=X_valid,
                 rhythm_valid=rhythm_valid, X_test=X_test, rhythm_test=rhythm_test)
     print('Data splits compressed and saved to: trained_models/saved_data_splits.npz')
-  
-    X_train,rhythm_train, X_valid,rhythm_valid, X_test, rhythm_test, threshold = load_datasets(preprocessing_config)
+
+    #X_train,rhythm_train, X_valid,rhythm_valid, X_test, rhythm_test = load_datasets(preprocessing_config)
+    # X_train,rhythm_train, X_valid,rhythm_valid, X_test, rhythm_test = transformData(X_train,rhythm_train, X_valid,rhythm_valid, 
+    # X_test, rhythm_test, preprocessing_config)
     
-    return  X_train,rhythm_train, X_valid,rhythm_valid, X_test, rhythm_test, threshold
+    return  X_train,rhythm_train, X_valid,rhythm_valid, X_test, rhythm_test
 
 
 def load_datasets(preprocessing_config):
@@ -141,47 +114,17 @@ def load_datasets(preprocessing_config):
     rhythm_train = data['rhythm_train']
     rhythm_valid = data['rhythm_valid']
     rhythm_test = data['rhythm_test']
-    disease_choice = data['disease_choice']
     data.close()
     
-    X_train,rhythm_train, X_valid,rhythm_valid, X_test, rhythm_test, threshold = transformData(X_train,rhythm_train, X_valid,rhythm_valid, 
-    X_test, rhythm_test, preprocessing_config, disease_choice)
-    return X_train,rhythm_train, X_valid,rhythm_valid, X_test, rhythm_test, threshold
+    X_train,rhythm_train, X_valid,rhythm_valid, X_test, rhythm_test = transformData(X_train,rhythm_train, X_valid,rhythm_valid, 
+    X_test, rhythm_test, preprocessing_config)
+    return X_train,rhythm_train, X_valid,rhythm_valid, X_test, rhythm_test
 
-#This function checks that the data splits that were created are representative of all classes
-#and in the appropriate ratios
-#Note: Only needed for AFIB datasets
-def correctSplitRatio(X_train,rhythm_train, X_valid,rhythm_valid, X_test, rhythm_test, test_size):
-
-    _, countTrain = np.unique(rhythm_train, return_counts=True)
-    _, countValid = np.unique(rhythm_valid, return_counts=True)
-    _, countTest = np.unique(rhythm_test, return_counts=True)
-
-   
-
-    if((len(countTrain) < num_classes) or (len(countValid) < num_classes) or(len(countTest) < num_classes) ):
-        return False
-    
-
-    #Calculates the proportion of a class in the training vs validation set
-    Normal_ratio_valid = countValid[0] / countTrain[0]
-    Disease_ratio_valid = countValid[1] / countTrain[1]
-
-
-    #Similarly for training vs test set
-    Normal_ratio_test = countTest[0] / countTrain[0]
-    Disease_ratio_test = countTest[1] / countTrain[1]
-
-   
-
-    return ( (X_train.shape[0] == len(rhythm_train)) and (X_valid.shape[0] == len(rhythm_valid))
-    and(X_test.shape[0] == len(rhythm_test))and (Disease_ratio_valid > test_size) and (Normal_ratio_valid > test_size)
-    and (Disease_ratio_test > test_size) and (Normal_ratio_test > test_size))
 
 #This function applies non-filter type preprocessing steps to the ECG data splits
 #Also prints out some useful summary statistics for the user
 
-def transformData(X_train,rhythm_train, X_valid,rhythm_valid, X_test, rhythm_test, preprocessing_config, disease_choice):
+def transformData(X_train,rhythm_train, X_valid,rhythm_valid, X_test, rhythm_test, preprocessing_config):
 
   
     #This only changes the shape to be appropriate for Keras models.
@@ -192,12 +135,12 @@ def transformData(X_train,rhythm_train, X_valid,rhythm_valid, X_test, rhythm_tes
     X_test = np.expand_dims(X_test, axis = 2)    if X_test.ndim == 2 else X_test
 
 
-    print('Note: \"Other\" labelled ECG data dropped by default.')
+    
     print('Window Size: ', X_train.shape[1])
     print('Number of leads used: ', X_train.shape[2])
-    print('\nRaw data:')
-    print('---------')
-    threshold = dataStatistics(X_train,rhythm_train, X_valid,rhythm_valid, X_test, rhythm_test,disease_choice)
+    # print('\nRaw data:')
+    # print('---------')
+    # dataStatistics(X_train,rhythm_train, X_valid,rhythm_valid, X_test, rhythm_test)
     isPreProprocess = any(i for i in preprocessing_config.values())
 
     if(isPreProprocess):
@@ -231,22 +174,29 @@ def transformData(X_train,rhythm_train, X_valid,rhythm_valid, X_test, rhythm_tes
                 print(str(index) + ') ',key)
                 index = index + 1
 
-        dataStatistics(X_train,rhythm_train, X_valid,rhythm_valid, X_test, rhythm_test, disease_choice)
+        #dataStatistics(X_train,rhythm_train, X_valid,rhythm_valid, X_test, rhythm_test)
         print('Data Transformation complete!\n')
     else:
         print('\nNo preprocessing performed. Data distribution unchanged\n')
 
   
     
-    return X_train,  rhythm_train, X_valid, rhythm_valid, X_test, rhythm_test, threshold
+    return X_train,  rhythm_train, X_valid, rhythm_valid, X_test, rhythm_test
 
 #Auxillary function for calling all the metric related functions from the generateMetrics class
-def outputMetrics(y_train_preds_dense, y_test_preds_dense, rhythm_train, rhythm_test, modelName,threshold):
+def outputMetrics(y_train_preds_dense, y_valid_preds_dense,
+y_test_preds_dense, rhythm_train, rhythm_valid,rhythm_test, modelName):
 
 
-    print_report(rhythm_train, y_train_preds_dense, threshold, modelName, 'Train')
-    print_report(rhythm_test, y_test_preds_dense, threshold, modelName,'Test')
-    confusionMatrix(rhythm_train, y_train_preds_dense,modelName,'Train', threshold)
-    confusionMatrix(rhythm_test, y_test_preds_dense,modelName,'Test', threshold)
-    summaryReport(rhythm_train, y_train_preds_dense,threshold,'Train')
-    summaryReport(rhythm_test, y_test_preds_dense, threshold, 'Test')
+    print_report(rhythm_train, y_train_preds_dense, modelName, 'Train')
+    print_report(rhythm_valid, y_valid_preds_dense, modelName, 'Validation')
+    print_report(rhythm_test, y_test_preds_dense, modelName,'Test')
+
+    confusionMatrix(rhythm_train, y_train_preds_dense,modelName,'Train')
+    confusionMatrix(rhythm_valid, y_valid_preds_dense,modelName,'Validation')
+    confusionMatrix(rhythm_test, y_test_preds_dense,modelName,'Test')
+
+
+    summaryReport(rhythm_train, y_train_preds_dense,'Train')
+    summaryReport(rhythm_valid, y_valid_preds_dense,'Validation')
+    summaryReport(rhythm_test, y_test_preds_dense, 'Test')
