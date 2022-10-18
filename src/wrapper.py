@@ -72,7 +72,7 @@ def main():
     preprocessing_choices = args.preprocessing
 
     isOptimise = args.optimise
-   
+    
     preprocessing_config = dict(oversample=False,undersample=False, normalize=False)
 
     #Build list of preprocessing steps requested (if any at all)
@@ -237,7 +237,7 @@ def hyperparameter_search():
 
 
     
-def optimize(modelName, preprocessing_config, epochs, model_choice):
+def optimise(modelName, preprocessing_config, epochs, model_choice):
 
     sweep_config = {
         'method': 'random',
@@ -314,6 +314,10 @@ def parseArguments():
                         ' This is useful when training toy models as the GPU introduces memory overheads that'
                         ' can lead to longer training and predicting for such simple models.'
                         )
+    parser.add_argument('-o','--optimise', action='store_true',
+                        help='Flag that can be passed to start wandb hyperparameter tuning.'
+                        )
+
 
     parser.add_argument('-ls','--load_saved_train_val', action='store_true',
                         help='Flag that can be passed '
