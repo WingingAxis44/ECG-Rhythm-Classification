@@ -4,6 +4,7 @@ from argparse import ArgumentTypeError
 from sklearn.model_selection import train_test_split
 import os
 import numpy as np
+import matplotlib.pyplot as plt
 num_classes = 3
 
 import preprocessing
@@ -164,6 +165,8 @@ def transformData(X_train,rhythm_train, X_valid,rhythm_valid, X_test, rhythm_tes
       
         X_train, rhythm_train = preprocessing.undersample(X_train, rhythm_train )
         X_valid, rhythm_valid = preprocessing.undersample(X_valid, rhythm_valid)
+    
+    
 
     if(isPreProprocess):
         print('\nAfter Preprocessing:')
@@ -178,11 +181,10 @@ def transformData(X_train,rhythm_train, X_valid,rhythm_valid, X_test, rhythm_tes
 
         #dataStatistics(X_train,rhythm_train, X_valid,rhythm_valid, X_test, rhythm_test)
         print('Data Transformation complete!\n')
-        print(np.unique(rhythm_train, return_counts=True))
+        
     else:
         print('\nNo preprocessing performed. Data distribution unchanged\n')
 
-  
     
     return X_train,  rhythm_train, X_valid, rhythm_valid, X_test, rhythm_test
 

@@ -63,8 +63,8 @@ def createCallBack(appendCSV, learning_rate, modelName):
                 factor=0.1,
                 patience=5,  
                 min_delta=0.0001,
-                min_lr=learning_rate/1000)
-                ,WandbCallback()] 
+                min_lr=learning_rate/1000)]
+               # ,WandbCallback()] 
 
     callbacks += [TensorBoard(log_dir='./logs/' + modelName + '/', histogram_freq=1),
                   CSVLogger('./logs/' + modelName + '/training.log', append=appendCSV)]  # Change append to true if continuing training

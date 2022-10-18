@@ -39,11 +39,11 @@ def normalizeSegment(X):
 
 #Applies bandstop filter for powerline interference removal
 #Also applies bandpass filter to remove baseline wander and some high frequency noise
-def preprocess_all_fn(X, fs = 500):
+def denoise(X, fs = 500):
 
    # order = int(0.3 * fs)
     order = 4
-    sos_stop = signal.butter(order, [49.0,51.0], btype='bandstop', output='sos', fs = fs)
+    sos_stop = signal.butter(order, [59.0,61.0], btype='bandstop', output='sos', fs = fs)
     
     
     sos_pass = signal.butter(order, [0.5,100.0], btype='bandpass', output='sos', fs = fs)
@@ -51,13 +51,9 @@ def preprocess_all_fn(X, fs = 500):
     row = 0
 
     for sample in X:
-        
-        for lead in range(X.shape[2]):
 
-            X[row,:,lead] = signal.sosfiltfilt(sos_stop,sample[:,lead])
-            X[row,:,lead] = signal.sosfiltfilt(sos_pass,sample[:,lead])
-           
-            # X[row,:,lead] = (panda_series.rolling(10, min_periods=1, center=True).mean()).to_numpy()
+        X[row] = signal.sosfiltfilt(sos_stop,sample)
+        X[row] = signal.sosfiltfilt(sos_pass,sample)
        
         row = row + 1
         

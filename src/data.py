@@ -2,6 +2,7 @@
 import wfdb
 import pandas as pd
 import numpy as np
+from preprocessing import denoise
 
 
 abnormal = ['L','R','V','/','A','f','F','j','a','E','J','e','S','Q']
@@ -36,8 +37,6 @@ def load_ecg(file):
 
 def make_dataset(data_path,num_sec=1, fs=360):
     
-    # global pts
-    # global abnormal
 
     num_cols = (int) (2*num_sec * fs)
 
@@ -55,6 +54,7 @@ def make_dataset(data_path,num_sec=1, fs=360):
         
         p_signal = p_signal[:,0]
 
+       
   
         df_ann = pd.DataFrame({'atr_sample':samp, 'atr_sym':sym})
         df_ann = df_ann.loc[df_ann.atr_sym.isin(abnormal + ['N'])]
@@ -62,7 +62,7 @@ def make_dataset(data_path,num_sec=1, fs=360):
       
         X, Y = build_XY(p_signal,df_ann, num_cols, num_sec, fs)
     
-
+        denoise(X,fs=360)
 
         max_rows.append(X.shape[0])
         X_all = np.append(X_all,X,axis = 0)

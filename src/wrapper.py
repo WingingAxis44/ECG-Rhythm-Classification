@@ -114,11 +114,16 @@ def main():
                 X_train,rhythm_train, X_valid,rhythm_valid, X_test, rhythm_test = utils.load_datasets(preprocessing_config)
                                 
             except:
+
+                sys.exit('Loading saved datasets failed.\nPlease ensure you have' +
+                ' training and test splits saved if you have requested to load in sample data, are skipping training or resuming training.\n' + 
+                'The program expects the splits to be saved as \"./trained_models/"saved_data_splits.npz\"\n' 
+                )
                 
-                print('Training and Validation datasets successfully loaded from:' + 
+            print('Training and Validation datasets successfully loaded from:' + 
                 './trained_models/saved_data_splits.npz')
         else:
-            X_train,rhythm_train, X_valid,rhythm_valid, X_test, rhythm_test = utils.build_datasets(num_sec=1, data_path='data/mitdb/', preprocessing_config=preprocessing_config)
+            X_train,rhythm_train, X_valid,rhythm_valid, X_test, rhythm_test = utils.build_datasets(num_sec=0.5, data_path='data/mitdb/', preprocessing_config=preprocessing_config)
     
         
 
