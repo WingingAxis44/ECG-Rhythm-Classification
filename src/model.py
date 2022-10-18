@@ -1,7 +1,7 @@
 
 from tensorflow.keras.layers import (MaxPooling1D,
-    Input, add, Dropout, BatchNormalization,LayerNormalization, GlobalAveragePooling1D,
-    TimeDistributed, Activation, Add, SimpleRNN , Bidirectional, LSTM, Flatten, Dense, Conv1D)
+    Input, add, Dropout, BatchNormalization,LayerNormalization,
+    TimeDistributed, Activation, Add, SimpleRNN , Bidirectional, LSTM, Flatten, Dense, Conv1D,pooling)
 
 from tensorflow.keras.optimizers import Adam
 
@@ -55,7 +55,7 @@ def CNN_model(X_train, config):
   model.add(Conv1D(filters = 256, kernel_size = 2, strides = 1, activation = 'relu'))
   model.add(BatchNormalization())
   model.add(Dropout(rate=config['dropout']))
-  model.add(GlobalAveragePooling1D)
+  model.add(pooling.global_average_pooling1d.GlobalAveragePooling1D())
   model.add(Dense(100, activation='relu'))
   model.add(Dense(num_classes,activation=output_activation_fn))
 
@@ -114,7 +114,7 @@ def generateModel(X_train, config):
   if(config['model_choice']=="LSTM"):
 
     model = LSTM_model(X_train, config)
-    
+
   if(config['model_choice']=="CNN"):
 
     model = CNN_model(X_train, config)
