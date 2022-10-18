@@ -40,7 +40,7 @@ import argparse
 
 preprocessing_options = ["none", "oversample", "normalize", "undersample"]
 
-model_options = ["simple",  "1D_CNN", "LSTM"]
+model_options = ["simple",  "1D_CNN", "LSTM","CNN"]
 
 
 #This wrapper class is the user's gateway to the experimental platform.
