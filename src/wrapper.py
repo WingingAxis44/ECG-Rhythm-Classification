@@ -230,7 +230,7 @@ def hyperparameter_search():
         
 
         y_train_preds_dense, y_valid_preds_dense, y_test_preds_dense = prediction(path_to_model=model,
-                                                            X_train=X_train, X_valid=X_valid, X_test= X_test, verbose=verbosity)
+                                                            X_train=X_train, X_valid=X_valid, X_test= X_test, verbose=1)
 
         utils.outputMetrics(y_train_preds_dense, y_valid_preds_dense, y_test_preds_dense,
         rhythm_train, rhythm_valid, rhythm_test, modelName)
