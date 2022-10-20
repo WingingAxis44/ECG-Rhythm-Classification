@@ -51,7 +51,7 @@ model_options = ["simple",  "1D_CNN", "LSTM","CNN","CNN_Ach"]
 def main():
 
     #TODO: Change for wandb
-    dropout = 0.2
+    dropout = 0.6
     learning_rate = 0.001
     batch_size = 64
 
@@ -179,8 +179,8 @@ def main():
             else:
 
                 #Check if model exists. If it does, confirm with user that they wish to overwrite it or not    
-                if(os.path.exists(path_to_model)):
-                    path_to_model = utils.overwriteCheck(path_to_model)
+                # if(os.path.exists(path_to_model)):
+                #     path_to_model = utils.overwriteCheck(path_to_model)
 
 
                 #Build and compile model

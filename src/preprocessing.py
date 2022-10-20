@@ -1,8 +1,7 @@
 import numpy as np
-import matplotlib.pyplot as plt
-import pandas as pd
+
 from scipy import signal
-import cv2
+
 from sklearn.preprocessing import (MaxAbsScaler)
 from imblearn.over_sampling import ( RandomOverSampler)
 
