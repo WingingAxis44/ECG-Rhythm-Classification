@@ -22,19 +22,19 @@ Please note that the following three commands will create new data splits, there
 from those reported in our report. This is due to the stochastic nature of gradient descent used in training neural networks.
 These runs also do not perform over-sampling or normalization.
 
-### Running with the baseline Fully connected model in our work.
+### Running with the baseline Fully connected model.
 To run this study's baseline Fully connected model with the optimal hyperparameters found (dropout_rate = 0.2, batch_size = 128, learning_rate = 0.001), type the following:
 ```sh
 make runSimple
 ```
 
-### Running with proposed LSTM model in our work.
+### Running with proposed LSTM model.
 To run this study's proposed LSTM classifier with the optimal hyperparameters found (dropout_rate =0.6, batch_size = 64, learning_rate = 0.001), type the following:
 ```sh
 make runLSTM
 ```
 
-### Running with proposed CNN model in study.
+### Running with proposed CNN model.
 To run this study's proposed CNN classifier with the optimal hyperparameters found (dropout_rate =0.3, batch_size = 64, learning_rate = 0.001), type the following:
 ```sh
 make runCNN
