@@ -13,7 +13,7 @@ from wandb.keras import WandbCallback
 from datetime import datetime
 
 
-def trainModel(model, X_train, y_train,  path_to_model, X_valid =None, y_valid=None, batch_size=64, epochs=5, verbose=1, learning_rate=0.001, appendCSV=False, inital_epoch=0):
+def trainModel(model, X_train, y_train,  path_to_model, X_valid =None, y_valid=None, batch_size=64, epochs=5, verbose=1, learning_rate=0.001, appendCSV=False, inital_epoch=0, isOptimize=False):
 
     #The following path modifications is so that the models are saved correctly
     #Inside the trained_models folder
@@ -41,10 +41,10 @@ def trainModel(model, X_train, y_train,  path_to_model, X_valid =None, y_valid=N
     executeBash(["mkdir", f"./logs/{modelName}"])
 
     if(X_valid.shape[0] == 0 or len(y_valid)==0):
-      model.fit(X_train, y_train, callbacks=createCallBack(appendCSV, learning_rate,modelName,start_time), batch_size=batch_size, 
+      model.fit(X_train, y_train, callbacks=createCallBack(appendCSV, learning_rate,modelName,start_time, isOptimize=isOptimize), batch_size=batch_size, 
       initial_epoch=inital_epoch, epochs=epochs, verbose=verbose)
     else:
-      model.fit(X_train, y_train, validation_data = (X_valid, y_valid),callbacks=createCallBack(appendCSV, learning_rate,modelName,start_time), batch_size=batch_size, 
+      model.fit(X_train, y_train, validation_data = (X_valid, y_valid),callbacks=createCallBack(appendCSV, learning_rate,modelName,start_time, isOptimize=isOptimize), batch_size=batch_size, 
       initial_epoch=inital_epoch, epochs=epochs, verbose=verbose)
     
   
@@ -55,7 +55,7 @@ def trainModel(model, X_train, y_train,  path_to_model, X_valid =None, y_valid=N
 
 
 
-def createCallBack(appendCSV, learning_rate, modelName,start_time):
+def createCallBack(appendCSV, learning_rate, modelName,start_time,isOptimize):
 
     
     callbacks = [EarlyStopping(
@@ -68,12 +68,14 @@ def createCallBack(appendCSV, learning_rate, modelName,start_time):
                 patience=5,  
                 min_delta=0.0001,
                 min_lr=learning_rate/1000)]
-               # ,WandbCallback()] 
+    if isOptimize:
+      callbacks += [WandbCallback()] 
+         
 
-    #callbacks += [TensorBoard(log_dir='./logs/' + modelName + '/', histogram_freq=1),
-    callbacks += [CSVLogger(f'./logs/{modelName}/training_{start_time}.log', append=appendCSV)]  # Change append to true if continuing training
+    callbacks += [TensorBoard(log_dir='./logs/' + modelName + '/', histogram_freq=1),
+     CSVLogger(f'./logs/{modelName}/training_{start_time}.log', append=appendCSV)]  # Change append to true if continuing training
 
-    # callbacks += [ModelCheckpoint('./trained_models/backup_'+modelName), 
-    # ModelCheckpoint('./trained_models/best_'+modelName,  save_best_only=True)]
+    callbacks += [ModelCheckpoint('./trained_models/backup_'+modelName), 
+    ModelCheckpoint('./trained_models/best_'+modelName,  save_best_only=True)]
 
     return callbacks

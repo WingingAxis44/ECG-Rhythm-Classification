@@ -40,7 +40,7 @@ import argparse
 
 preprocessing_options = ["none", "oversample", "normalize", "undersample"]
 
-model_options = ["simple",  "1D_CNN", "LSTM","CNN","CNN_Ach"]
+model_options = ["simple", "LSTM","CNN"]
 
 
 #This wrapper class is the user's gateway to the experimental platform.
@@ -50,10 +50,8 @@ model_options = ["simple",  "1D_CNN", "LSTM","CNN","CNN_Ach"]
 
 def main():
 
-    #TODO: Change for wandb
-    dropout = 0.6
-    learning_rate = 0.001
-    batch_size = 64
+    
+
 
     args = parseArguments()
 
@@ -63,6 +61,25 @@ def main():
 
     path_to_model = args.path_to_model
     model_choice = args.model_choice
+
+    if model_choice == 'simple':
+        dropout = 0.2
+        learning_rate = 0.001
+        batch_size = 128
+
+    if model_choice == 'LSTM':
+        dropout = 0.6
+        learning_rate = 0.001
+        batch_size = 64
+
+    if model_choice == 'CNN':
+        dropout = 0.3
+        learning_rate = 0.001
+        batch_size = 64
+    else:
+        dropout = 0.3
+        learning_rate = 0.001
+        batch_size = 64
 
 
     resume_training = args.resume
@@ -179,8 +196,8 @@ def main():
             else:
 
                 #Check if model exists. If it does, confirm with user that they wish to overwrite it or not    
-                # if(os.path.exists(path_to_model)):
-                #     path_to_model = utils.overwriteCheck(path_to_model)
+                if(os.path.exists(path_to_model)):
+                    path_to_model = utils.overwriteCheck(path_to_model)
 
 
                 #Build and compile model
@@ -223,7 +240,7 @@ def hyperparameter_search():
             X_train,rhythm_train, X_valid,rhythm_valid, X_test, rhythm_test = utils.load_datasets(preprocessing_config)
                             
         except:
-            X_train,rhythm_train, X_valid,rhythm_valid, X_test, rhythm_test = utils.build_datasets(num_sec=1, data_path='data/mitdb/', preprocessing_config=preprocessing_config)        
+            X_train,rhythm_train, X_valid,rhythm_valid, X_test, rhythm_test = utils.build_datasets(num_sec=0.5, data_path='data/mitdb/', preprocessing_config=preprocessing_config)        
             
 
         model = generateModel(X_train, model_config)
@@ -231,7 +248,7 @@ def hyperparameter_search():
             
         trainModel(model=model, X_train=X_train,X_valid=X_valid, y_train = rhythm_train,
                     y_valid = rhythm_valid, path_to_model=modelName, batch_size=batch_size, learning_rate= learning_rate,
-                    epochs=epochs, verbose=1)
+                    epochs=epochs, verbose=1, isOptimize=True)
         
 
         y_train_preds_dense, y_valid_preds_dense, y_test_preds_dense = prediction(path_to_model=model,

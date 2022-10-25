@@ -1,10 +1,8 @@
 import data
-from scipy.stats import describe
 from argparse import ArgumentTypeError
 from sklearn.model_selection import train_test_split
 import os
 import numpy as np
-import matplotlib.pyplot as plt
 num_classes = 3
 
 import preprocessing
@@ -42,44 +40,6 @@ def overwriteCheck(path_to_model):
         (os.path.exists('./trained_models/' + path_to_model)) ):
                 overwriteCheck(path_to_model)
     return path_to_model
-
-#Function for calculating and displaying statistics about the ECG data extracted
-#and the associated diagnostic class label
-
-def dataStatistics(X_train,rhythm_train, X_valid,rhythm_valid, X_test, rhythm_test, disease_choice):
-
-    _, countTrain = np.unique(rhythm_train, return_counts=True)
-    _, countValid = np.unique(rhythm_valid, return_counts=True)
-    _, countTest = np.unique(rhythm_test, return_counts=True)
-
-    countNormal = countTrain[0] +countValid[0] +countTest[0]
-    countDisease = countTrain[1] +countValid[1] +countTest[1]
-    countTotal = sum(countTrain + countValid + countTest)
-
-    from tabulate import tabulate
-
-    disease = 'AFIB' if disease_choice == 1 else 'MI'
-
-    data = [['Training', countTrain[0], countTrain[1], sum(countTrain)], ['Validation', countValid[0], countValid[1], sum(countValid)],
-    ['Testing', countTest[0], countTest[1], sum(countTest)], ['TOTAL', countNormal, countDisease, countTotal]]
-    print('\nSample size splits:\n')
-    print (tabulate(data, headers=["Stage", "Normal", disease, "TOTAL"], tablefmt="github"))
-
-    for lead in range(X_train.shape[2]):
-        print('\nLead: ', lead)
-        print('---------')
-        
-        trainStats = describe(X_train[:,:,lead], nan_policy='omit',axis = None)
-        validStats = describe(X_valid[:,:,lead], nan_policy='omit',axis = None)
-        testStats = describe(X_test[:,:,lead], nan_policy='omit',axis = None)
-
-
-        data = [['Training', '({:.4f}, {:.4f})'.format(*trainStats.minmax), trainStats.mean, trainStats.variance, trainStats.kurtosis, trainStats.skewness ],
-                ['Validation', '({:.4f}, {:.4f})'.format(*validStats.minmax), validStats.mean, validStats.variance, validStats.kurtosis, validStats.skewness ], 
-                ['Testing', '({:.4f}, {:.4f})'.format(*testStats.minmax), testStats.mean, testStats.variance, testStats.kurtosis, testStats.skewness]]
-        print('\nSummary Statistics:\n')
-        print (tabulate(data, tablefmt="github", headers=["Stage","(Min, Max)", "Mean", "Variance", "Kurtosis", "Skewness"], floatfmt=".4f"))
-        print('')
 
 def build_datasets(num_sec,  data_path, preprocessing_config):
 
@@ -141,9 +101,7 @@ def transformData(X_train,rhythm_train, X_valid,rhythm_valid, X_test, rhythm_tes
     
     print('Window Size: ', X_train.shape[1])
     print('Number of leads used: ', X_train.shape[2])
-    # print('\nRaw data:')
-    # print('---------')
-    # dataStatistics(X_train,rhythm_train, X_valid,rhythm_valid, X_test, rhythm_test)
+
     isPreProprocess = any(i for i in preprocessing_config.values())
 
     if(isPreProprocess):
