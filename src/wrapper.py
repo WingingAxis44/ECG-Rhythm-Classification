@@ -1,23 +1,11 @@
-# MLECG Experimental Platform
+# AI-ECG Experimental Platform
 # Authors: Jarred Fisher, Shai Aarons, Joshua Rosenthal
-# Since:   May, 2022
+# Since:   October, 2022
 
 # Description:
 # ------------
 # Modular experimental platform for the training and testing of deep neural networks
-# in the task of cardiovascular disease (CVD) detection.
-
-# Current CVDs classifiable:
-# --------------------------
-# Atrial Fibrillation, Myocardial Infarction
-
-# MLECG Feature List:
-# -------------------
-# Signal Filtering and data preprocessing, user input, logging,
-# metric generation, contingency measures, cross-validation,
-# error reporting, modular architecture development and extensive argument parsing.
-
-# Powered by TensorFlow Machine Learning Library   
+# in the task of ECG Signal classification.
 
 import warnings
 import time
@@ -38,7 +26,7 @@ from tensorflow.keras.models import load_model
 import argparse
 
 
-preprocessing_options = ["none", "oversample", "normalize", "undersample"]
+preprocessing_options = ["none", "oversample", "normalize"]
 
 model_options = ["simple", "LSTM","CNN"]
 
