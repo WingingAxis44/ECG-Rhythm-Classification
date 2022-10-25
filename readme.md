@@ -1,5 +1,5 @@
 # AI Assignment 2
-Welcome to the ML-ECG Platform. We have made it that the code is simple for you to install and get up and running! We use Python virtual environments to run our python and tensorflow code. We have created a make file that will allow you to easily run the exact same experiments as we ran in our assignment. Follow the steps below to run the experiments as outlined in our assignment.
+Welcome to the AI-ECG Platform. We have made it that the code is simple for you to install and get up and running! We use Python virtual environments to run our python and tensorflow code. We have created a make file that will allow you to easily run the exact same experiments as we ran in our assignment. Follow the steps below to run the experiments as outlined in our assignment.
 
 
 ## Installation
@@ -20,7 +20,7 @@ We will then show you how to run the program in custom ways.
 The main procedures of the codebase happen in the wrapper.py python file.
 Please note that the following three commands will create new data splits, therefore the results of training may differ slightly
 from those reported in our report. This is due to the stochastic nature of gradient descent used in training neural networks.
-These runs also do not perform over-sampling or normalization.
+These runs also do not perform over-sampling or normalization. However, results should be mostly the same as our SD was low
 
 ### Running with the baseline Fully connected model.
 To run this study's baseline Fully connected model with the optimal hyperparameters found (dropout_rate = 0.2, batch_size = 128, learning_rate = 0.001), type the following:
@@ -63,4 +63,3 @@ You may replace the "`<args> <args> <args>...`" with the following arguments to 
 - **-m** : This is the model you can chose to train with. There are several options. These include the simple FFNN, LSTM, and the CNN used in our assignment. Default is the simple FFNN.
 - **-d** : Flag that can be passed to disable training with GPU. 
 - **-ls** : Each time data splits are created they are saved to numpy files. This argument will load the saved data splits instead of resampling the ecgs. This is a flag that can be passed to load previously saved training, validation and test data splits from disk.  Note: If resuming training or skipping to predictions, data splits will always be loaded from disk to maintain integrity in the evaulation of the model
-- **-n** : Number of seconds to include before and after each R-peak. As an example, if you wish to have a 1 second long segment use the argument "-n 0.5". Default is 0.5.
