@@ -1,4 +1,4 @@
-# AI Assignment 2
+# ECG Rhythm Classification
 Welcome to the AI-ECG Platform. We have made it that the code is simple for you to install and get up and running! We use Python virtual environments to run our python and tensorflow code. We have created a make file that will allow you to easily run the exact same experiments as we ran in our assignment. Follow the steps below to run the experiments as outlined in our assignment.
 
 
